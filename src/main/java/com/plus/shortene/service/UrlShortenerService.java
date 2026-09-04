@@ -5,6 +5,7 @@ import com.plus.shortene.repository.ShortUrlCache;
 import com.plus.shortene.repository.ShortUrlRepository;
 import com.plus.shortene.request.CreateShortUrlRequest;
 import com.plus.shortene.response.ShortUrlResponse;
+import com.plus.shortene.snowflake.ShortCodeGenerator;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
