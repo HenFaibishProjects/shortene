@@ -4,8 +4,11 @@ import com.plus.shortene.request.CreateShortUrlRequest;
 import com.plus.shortene.response.ShortUrlResponse;
 import com.plus.shortene.service.UrlShortenerService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 @RestController
 public class UrlShortenerController {
@@ -30,7 +33,12 @@ public class UrlShortenerController {
     public ResponseEntity<Void> redirect(
             @PathVariable String shortCode) {
 
-        // TODO: Implement the redirect flow after URL resolution is available.
-        return null;
+        String originalUrl =
+                urlShortenerService.resolveUrl(shortCode);
+
+        return ResponseEntity
+                .status(HttpStatus.FOUND)
+                .location(URI.create(originalUrl))
+                .build();
     }
 }

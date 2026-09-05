@@ -1,6 +1,8 @@
 package com.plus.shortene.service;
 
 import com.plus.shortene.domain.ShortUrl;
+import com.plus.shortene.exception.ShortUrlExpiredException;
+import com.plus.shortene.exception.ShortUrlNotFoundException;
 import com.plus.shortene.repository.ShortUrlCache;
 import com.plus.shortene.repository.ShortUrlRepository;
 import com.plus.shortene.request.CreateShortUrlRequest;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 /*
  * CREATE: long URL -> hash for deduplication -> short code -> repository -> response.
@@ -75,7 +78,41 @@ public class UrlShortenerService {
     }
 
     public String resolveUrl(String shortCode) {
-        // TODO: Resolve from Redis first, then PostgreSQL on a cache miss.
-        return null;
+
+        // First try Redis.
+        Optional<String> cachedUrl = cache.get(shortCode);
+
+        if (cachedUrl.isPresent()) {
+            return cachedUrl.get();
+        }
+
+        // Cache miss: read from PostgreSQL.
+        ShortUrl shortUrl = repository.findByShortCode(shortCode)
+                .orElseThrow(() ->
+                        new ShortUrlNotFoundException(
+                                "Short URL not found: " + shortCode
+                        )
+                );
+
+        // Expired URLs should no longer be resolved.
+        if (shortUrl.isExpired()) {
+            throw new ShortUrlExpiredException(
+                    "Short URL expired: " + shortCode
+            );
+        }
+
+        // Cache only until the URL itself expires.
+        Duration ttl = Duration.between(
+                Instant.now(),
+                shortUrl.expiresAt()
+        );
+
+        cache.put(
+                shortCode,
+                shortUrl.originalUrl(),
+                ttl
+        );
+
+        return shortUrl.originalUrl();
     }
 }
