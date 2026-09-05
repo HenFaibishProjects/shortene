@@ -16,8 +16,11 @@ import java.time.Instant;
 import java.util.Optional;
 
 /*
- * CREATE: long URL -> hash for deduplication -> short code -> repository -> response.
- * PLANNED RESOLVE: short code -> Redis cache -> PostgreSQL on cache miss -> redirect.
+ * CREATE:
+ * long URL -> hash for deduplication -> short code -> repository -> response.
+ *
+ * RESOLVE:
+ * short code -> Redis cache -> PostgreSQL on cache miss -> expiration check -> cache -> redirect.
  */
 @Service
 public class UrlShortenerService {

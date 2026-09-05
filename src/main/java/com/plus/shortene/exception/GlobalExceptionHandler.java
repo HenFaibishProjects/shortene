@@ -31,8 +31,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleValidation(
             MethodArgumentNotValidException exception) {
 
+        String message = exception.getBindingResult()
+                .getAllErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .filter(errorMessage ->
+                        errorMessage != null && !errorMessage.isBlank())
+                .findFirst()
+                .orElse("Invalid request");
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body("Invalid request");
+                .body(message);
     }
 }

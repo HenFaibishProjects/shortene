@@ -28,7 +28,7 @@ public class UrlShortenerController {
         return urlShortenerService.createShortUrl(request);
     }
 
-    // Planned entry point for resolving a short code and redirecting the client.
+    // Resolves the short code and redirects the client to the original URL.
     @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(
             @PathVariable String shortCode) {

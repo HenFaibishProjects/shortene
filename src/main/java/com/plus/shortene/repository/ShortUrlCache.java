@@ -3,7 +3,7 @@ package com.plus.shortene.repository;
 import java.time.Duration;
 import java.util.Optional;
 
-// Caches shortCode -> originalUrl lookups for the planned resolve flow.
+// Caches shortCode -> originalUrl lookups for the resolve flow.
 // It is not used for creation deduplication; PostgreSQL remains the source of truth.
 public interface ShortUrlCache {
 
