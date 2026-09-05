@@ -6,11 +6,16 @@ import com.plus.shortene.repository.ShortUrlRepository;
 import com.plus.shortene.request.CreateShortUrlRequest;
 import com.plus.shortene.response.ShortUrlResponse;
 import com.plus.shortene.snowflake.ShortCodeGenerator;
+import com.plus.shortene.url.UrlHasher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
 
+/*
+ * CREATE: long URL -> hash for deduplication -> short code -> repository -> response.
+ * PLANNED RESOLVE: short code -> Redis cache -> PostgreSQL on cache miss -> redirect.
+ */
 @Service
 public class UrlShortenerService {
 
@@ -19,41 +24,58 @@ public class UrlShortenerService {
     private final ShortUrlRepository repository;
     private final ShortUrlCache cache;
     private final ShortCodeGenerator shortCodeGenerator;
+    private final UrlHasher urlHasher;
 
     public UrlShortenerService(
             ShortUrlRepository repository,
             ShortUrlCache cache,
-            ShortCodeGenerator shortCodeGenerator) {
+            ShortCodeGenerator shortCodeGenerator,
+            UrlHasher urlHasher) {
 
         this.repository = repository;
         this.cache = cache;
         this.shortCodeGenerator = shortCodeGenerator;
+        this.urlHasher = urlHasher;
     }
 
     public ShortUrlResponse createShortUrl(CreateShortUrlRequest request) {
 
+        // Trim surrounding whitespace without changing the URL's meaning.
+        String originalUrl = request.url().trim();
+
+        // The stable hash lets the repository detect the same long URL.
+        // It is used for deduplication and is not the public short code.
+        String urlHash = urlHasher.hash(originalUrl);
+
+        // The short code identifies the shortened URL. Production would use
+        // a distributed Snowflake-style generator for this value.
         String shortCode = shortCodeGenerator.generate();
 
         Instant createdAt = Instant.now();
         Instant expiresAt = createdAt.plus(URL_EXPIRATION);
 
+        // Keep the public code, destination, deduplication hash, and lifetime together.
         ShortUrl shortUrl = new ShortUrl(
                 shortCode,
-                request.url(),
+                originalUrl,
+                urlHash,
                 createdAt,
                 expiresAt
         );
 
-        repository.save(shortUrl);
+        // Deduplication and insertion happen atomically in the repository.
+        // The result may be this new record or an existing active record.
+        ShortUrl saved = repository.saveOrGetExisting(shortUrl);
 
+        // Always respond from the repository result so duplicates reuse its short code.
         return new ShortUrlResponse(
-                shortUrl.shortCode(),
-                shortUrl.originalUrl()
+                saved.shortCode(),
+                saved.originalUrl()
         );
     }
 
     public String resolveUrl(String shortCode) {
-        // ניישם בשלב הבא
+        // TODO: Resolve from Redis first, then PostgreSQL on a cache miss.
         return null;
     }
 }

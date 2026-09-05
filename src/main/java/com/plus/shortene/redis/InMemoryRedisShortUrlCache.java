@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Local simulation of Redis for short-code resolution only.
+// Redis is a performance optimization; PostgreSQL remains the source of truth.
 @Repository
 public class InMemoryRedisShortUrlCache implements ShortUrlCache {
 
@@ -22,6 +24,7 @@ public class InMemoryRedisShortUrlCache implements ShortUrlCache {
             return Optional.empty();
         }
 
+        // Expired entries are removed when read instead of by a background process.
         if (Instant.now().isAfter(entry.expiresAt())) {
             storage.remove(shortCode, entry);
             return Optional.empty();
@@ -36,6 +39,7 @@ public class InMemoryRedisShortUrlCache implements ShortUrlCache {
             String originalUrl,
             Duration ttl
     ) {
+        // TTL keeps the cached destination from living longer than intended.
         Instant expiresAt = Instant.now().plus(ttl);
         storage.put(shortCode, new CacheEntry(originalUrl, expiresAt));
     }

@@ -16,6 +16,8 @@ public class UrlShortenerController {
         this.urlShortenerService = urlShortenerService;
     }
 
+    // Entry point for creating a short URL from the original long URL.
+    // The controller validates the request and delegates the work to the service.
     @PostMapping("/api/urls")
     public ShortUrlResponse createShortUrl(
             @Valid @RequestBody CreateShortUrlRequest request) {
@@ -23,6 +25,7 @@ public class UrlShortenerController {
         return urlShortenerService.createShortUrl(request);
     }
 
+    // Planned entry point for resolving a short code and redirecting the client.
     @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(
             @PathVariable String shortCode) {
