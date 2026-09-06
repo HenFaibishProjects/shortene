@@ -18,7 +18,7 @@ public class Sha256UrlHasher implements UrlHasher {
 
             // Trimming is intentionally the only normalization because broader
             // URL normalization can change the destination's meaning.
-            byte[] hash = digest.digest(url.trim().getBytes(StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(url.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is not available", exception);
